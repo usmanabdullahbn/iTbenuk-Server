@@ -1,8 +1,14 @@
+import dns from "dns";
 import dotenv from "dotenv";
 import app from "./app.js";
 import { connectDB } from "./config/db.js";
 
 dotenv.config();
+
+
+
+dns.setServers(["8.8.8.8", "8.8.4.4"]);
+console.log("Using DNS:", dns.getServers());
 
 const PORT = process.env.PORT || 5000;
 

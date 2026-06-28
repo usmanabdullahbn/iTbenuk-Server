@@ -14,24 +14,42 @@ function validatePhone(phone) {
   return /^\+?[0-9][0-9\s().-]{7,19}$/.test(normalized) && digitCount >= 8 && digitCount <= 15;
 }
 
+function parseOrigins(value) {
+  return String(value || "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+}
+
+function getAllowedOrigins() {
+  return new Set([
+    ...parseOrigins(process.env.CLIENT_URLS),
+    process.env.CLIENT_URL,
+    "https://i-tbenuk-front-end.vercel.app",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173"
+  ].filter(Boolean));
+}
+
 function getClientUrl(req) {
   const origin = req.get("origin");
 
   if (origin) {
     try {
       const { hostname, port, protocol } = new URL(origin);
+      const normalizedOrigin = new URL(origin).origin;
       const isLocalDev =
         protocol.startsWith("http") &&
         /^517[3-9]$/.test(port) &&
         (hostname === "localhost" || hostname === "127.0.0.1" || /^192\.168\./.test(hostname));
 
-      if (isLocalDev) return origin;
+      if (getAllowedOrigins().has(normalizedOrigin) || isLocalDev) return normalizedOrigin;
     } catch (_error) {
       // Fall back to configured URL below.
     }
   }
 
-  return process.env.CLIENT_URL || "http://localhost:5176";
+  return process.env.CLIENT_URL || parseOrigins(process.env.CLIENT_URLS)[0] || "https://i-tbenuk-front-end.vercel.app";
 }
 
 async function initializeStripeCheckout({ req, user, course, reference, phone }) {

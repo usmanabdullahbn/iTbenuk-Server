@@ -11,8 +11,18 @@ import paymentRoutes from "./routes/paymentRoutes.js";
 import { errorHandler, notFound } from "./middleware/errorMiddleware.js";
 
 const app = express();
+
+function parseOrigins(value) {
+  return String(value || "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+}
+
 const allowedOrigins = new Set([
+  ...parseOrigins(process.env.CLIENT_URLS),
   process.env.CLIENT_URL || "http://localhost:5173",
+  "https://i-tbenuk-front-end.vercel.app",
   "http://localhost:5173",
   "http://127.0.0.1:5173"
 ]);
@@ -29,7 +39,7 @@ app.use(
         const { hostname, port, protocol } = new URL(origin);
         const isLocalDev =
           protocol.startsWith("http") &&
-          port === "5173" &&
+          /^517[3-9]$/.test(port) &&
           (hostname === "localhost" || hostname === "127.0.0.1" || /^192\.168\./.test(hostname));
 
         if (allowedOrigins.has(origin) || isLocalDev) {

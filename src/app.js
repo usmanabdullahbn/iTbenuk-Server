@@ -8,14 +8,10 @@ import leadRoutes from "./routes/leadRoutes.js";
 import courseRoutes from "./routes/courseRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
+import { isAllowedClientOrigin } from "./config/clientOrigins.js";
 import { errorHandler, notFound } from "./middleware/errorMiddleware.js";
 
 const app = express();
-const allowedOrigins = new Set([
-  process.env.CLIENT_URL || "http://localhost:5173",
-  "http://localhost:5173",
-  "http://127.0.0.1:5173"
-]);
 
 app.use(helmet());
 app.use(
@@ -25,18 +21,8 @@ app.use(
         return callback(null, true);
       }
 
-      try {
-        const { hostname, port, protocol } = new URL(origin);
-        const isLocalDev =
-          protocol.startsWith("http") &&
-          port === "5173" &&
-          (hostname === "localhost" || hostname === "127.0.0.1" || /^192\.168\./.test(hostname));
-
-        if (allowedOrigins.has(origin) || isLocalDev) {
-          return callback(null, true);
-        }
-      } catch (_error) {
-        return callback(new Error("Invalid request origin"));
+      if (isAllowedClientOrigin(origin)) {
+        return callback(null, true);
       }
 
       return callback(new Error("Not allowed by CORS"));

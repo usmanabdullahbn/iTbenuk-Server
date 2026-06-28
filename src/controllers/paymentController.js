@@ -2,6 +2,7 @@ import crypto from "crypto";
 import Payment from "../models/Payment.js";
 import User from "../models/User.js";
 import { courses } from "../config/courses.js";
+import { getPrimaryClientUrl, isAllowedClientOrigin, isLocalDevOrigin } from "../config/clientOrigins.js";
 
 function buildReference(userId, courseId) {
   return `itb_${courseId}_${userId}_${Date.now()}`;
@@ -17,21 +18,11 @@ function validatePhone(phone) {
 function getClientUrl(req) {
   const origin = req.get("origin");
 
-  if (origin) {
-    try {
-      const { hostname, port, protocol } = new URL(origin);
-      const isLocalDev =
-        protocol.startsWith("http") &&
-        /^517[3-9]$/.test(port) &&
-        (hostname === "localhost" || hostname === "127.0.0.1" || /^192\.168\./.test(hostname));
-
-      if (isLocalDev) return origin;
-    } catch (_error) {
-      // Fall back to configured URL below.
-    }
+  if (origin && (isAllowedClientOrigin(origin) || isLocalDevOrigin(origin))) {
+    return new URL(origin).origin;
   }
 
-  return process.env.CLIENT_URL || "http://localhost:5176";
+  return getPrimaryClientUrl();
 }
 
 async function initializeStripeCheckout({ req, user, course, reference, phone }) {
